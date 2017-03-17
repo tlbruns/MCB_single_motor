@@ -68,11 +68,13 @@
 #define BW_FLAG  0x40; // BW flag
 #define CY_FLAG  0x80; // CY flag
 
+#ifndef AD5761R_h
 union uint8_uint32
 {
 	uint8_t byte[4];
 	uint32_t value;
 };
+#endif
 
 class LS7366R
 {
@@ -80,7 +82,7 @@ public:
 	LS7366R(uint8_t csPin_);
 	~LS7366R(void);
 
-	void init(void);
+	void init(void); // configures encoder and enables counting
 	int32_t count(void);  // returns current count
 	uint8_t status(void); // returns STR register
 

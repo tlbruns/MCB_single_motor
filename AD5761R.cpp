@@ -17,17 +17,18 @@
 //=========================================================================*/
 
 #include "AD5761R.h"
+#include <SPI.h>
+#include <stdint.h>
 
 // default constructor
 AD5761R::AD5761R(const uint8_t csDAC)
 	: csDAC_(csDAC)
 	, SPISettings_(4000000, MSBFIRST, SPI_MODE2)
-{
+{	
 	// init chip select pin (SYNC)
-	// NOTE: commented out as this is done during MCB construction
-	//pinMode(pin_SYNC, OUTPUT);
-	//digitalWriteFast(pin_SYNC, HIGH);
-	
+	pinMode(csDAC, OUTPUT);
+	digitalWriteFast(csDAC, HIGH);
+
 	// default settings
 	uint32_t CV  = CV_ZERO;		// CLEAR voltage = zero scale 
 	uint32_t OVR = OVR_DISABLE; // 5% overrange = disabled
@@ -48,6 +49,15 @@ void AD5761R::init(void)
 	transfer(dataCtrl_);
 }
 
+void AD5761R::init(uint32_t dataCtrl) 
+{
+	// !! NOTE: must use beginTransfer() and endTransfer() !!
+
+	// set control register
+	dataCtrl_.value = dataCtrl;
+	transfer(dataCtrl_);
+}
+
 void AD5761R::reset(void)
 {
 	// !! NOTE: must use beginTransfer() and endTransfer() !!
@@ -62,23 +72,23 @@ void AD5761R::set(int16_t output)
 	// !! NOTE: must use beginTransfer() and endTransfer() !!
 
 	uint8_uint32 temp;
-	//// signed 16 bit values are still stored in 32 bit register. Thus the signed bit is
-	//// bit 31 (MSB) rather than bit 15. This workaround corrects for this issue.
+
+	// signed 16 bit values are still stored in 32 bit register. Thus the signed bit is
+	// bit 31 (MSB) rather than bit 15. This workaround corrects for this issue.
 	temp.byte[0] = (uint8_t)(output & 0x00FF);
 	temp.byte[1] = (uint8_t)((output >> 8) & 0x00FF);
 	temp.byte[2] = WR_UPDATE>>16;
-
 	transfer(temp);
 }
 
 void AD5761R::beginTransfer(void)
 {
-	SPI.beginTransaction(SPISettings_); // dummy transfer to ensure settings have changed
+	SPI.beginTransaction(SPISettings_); // dummy transfer to ensure SPI settings have changed
 	SPI.transfer(0x00);
 	SPI.endTransaction(); 
 	
-	digitalWriteFast(csDAC_, LOW);
 	SPI.beginTransaction(SPISettings_);
+	digitalWriteFast(csDAC_, LOW);
 }
 
 void AD5761R::endTransfer(void)
@@ -91,31 +101,17 @@ uint32_t AD5761R::transfer(uint8_uint32 dataOut)
 {
 	// !! NOTE: must call beginTransfer() first !!
 	
-	uint8_uint32 data_temp;	
+	uint8_uint32 dataIn;	
 	
 	for(int8_t aa = 3 ; aa > 0 ; aa--) { // send 3 byte packet, MSB->LSB
-		data_temp.byte[aa-1] = SPI.transfer(dataOut.byte[aa-1]);
+		dataIn.byte[aa-1] = SPI.transfer(dataOut.byte[aa-1]);
 	}	
-	return data_temp.value;
+	return dataIn.value;
 }
-	                     
-//void AD5761R::update(int16_t v_out)
-//{
-//	// assemble the 24-bit packet to send
-//	uint8_uint32 data;
-//	data.value = (WR_UPDATE | v_out);
-//	//data.byte[3] = 0x00;
-//	//data.byte[2] = WR_UPDATE;
-//	//data.byte[1] = (uint8_t)((output >> 8) & 0x00FF); // isolate the high and low bytes of output
-//	//data.byte[0] = (uint8_t)(output & 0x00FF);
-//	
-//	// !! NOTE: must call beginTransfer() first !!
-//	transfer(data);
-//}
 
 AD5761R::~AD5761R(void)
 {
-	// reset DAC
+	// reset DAC back to 0V output
 	beginTransfer();
 	reset();
 	endTransfer();

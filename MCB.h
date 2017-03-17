@@ -43,9 +43,10 @@ public:
 	~MCB(void);
 	std::vector<MCBmodule> modules; // each module controls a single motor
 	void init(void);	// initialize all modules (to be called after all addModule commands)
-	void addModule(uint8_t position);
+	void addModule(uint8_t position); // creates and adds module to <vector>modules
 	void disableAllAmps(void); // sets inhibit pin for motor amps
 	void enableAllAmps(void);  // NOTE: only enables n = numModules_
+	void setLEDG(uint8_t position, bool state); // sets green LED
 	void setDACs(Int16Vec const &val); // manually set DAC outputs
 	void stepPID(void); // PID controller performs one step (reads encoders, computes effort, updates DACs)
 	void setCount(uint8_t moduleNum, int32_t countDesired); // set desired motor position
@@ -57,11 +58,12 @@ public:
 	bool isMenuPressed(void); // returns current state of menu button
 
 private:
-	AD5761R DAC_;
-	Int16Vec DACval_;
-	Si5351 si5351_;
-	uint8_t numModules_;
+	AD5761R DAC_; // provides access to all DACs
+	Int16Vec DACval_; // stores the current DAC output commands
+	Si5351 si5351_; // clock generator for encoder ICs (LS7366R)
+	uint8_t numModules_; // number of motor modules connected
 	uint8_t quadratureMode_; // counts per quadrature cycle (1x, 2x, 4x)
+	BoolVec LEDG_; // Green LED status (true = on)
 };
 
 #endif

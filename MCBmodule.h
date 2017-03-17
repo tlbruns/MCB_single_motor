@@ -32,7 +32,7 @@ public:
 	~MCBmodule(void);
 	
 	void init(float kp, float ki, float kd); // initializes encoder/PID controller and enables module
-	void init(void); // initializes with PID gains all set to 0.0
+	void init(void); // ^^ except initializes with PID gains all set to 0.0
 	void setStatus(bool status); // start or stop module (and thus, the associated motor)
 	bool getStatus(void); 
 
@@ -42,7 +42,7 @@ public:
 
 	// Encoder
 	uint8_t getENCpin(void);	 // returns LS7366R chip select pin
-	void setCountDesired(int32_t countDesired);
+	void setCountDesired(int32_t countDesired); // sets target position for motor in encoder counts
 	int32_t getCountDesired(void);
 	int32_t readCount(void); // reads current position from encoder
 	int32_t getCountLast(void); // returns result of most recent read_count(), does NOT query encoder
@@ -51,7 +51,6 @@ public:
 	int16_t step(void);	// steps the PID controller, returns next DAC value
 	void restartPID(void); // call this after changing gains, resets state buffer to zeros
 	float getEffort(void); // [Amps] returns last computed effort
-	int16_t convertEffortToDAC(float effort);
 	void setGains(float kp, float ki, float kd);
 	void setKp(float kp);
 	float getKp(void);
@@ -59,6 +58,8 @@ public:
 	float getKi(void);
 	void setKd(float kd);
 	float getKd(void);
+	int16_t convertEffortToDAC(float effort); // converts a motor effort [Amps] to a DAC command
+
 	
 private:
 	uint8_t position_; // module position on the motor board (i.e. physical slot)

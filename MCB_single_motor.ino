@@ -8,16 +8,24 @@
 #include "MCBmodule.h"
 #include "MCBpins.h"
 #include "PID_f32.h"
+#include <IntervalTimer.h>
 
 // GLOBAL VARIABLES
 const uint8_t MCBmodules_num = 1; // number of modules (i.e. motors) plugged into this board
 MCB MotorBoard(MCBmodules_num);	// construct motor control board
 
 long int startTime;
+long int lastTime = 0;
 long int loopcount = 0;
 
+IntervalTimer PIDTimer;
+void PIDTimerISR(void);
+uint32_t timeStepPID = 2000;
 float kp = 0.0001, ki = 0.000, kd = 0.000;
-int32_t countDesired = 500;
+int32_t countDesired = 0;
+
+uint32_t buttonUpdateInterval = 100; // [ms]
+uint32_t buttonCountChange = 500; // [counts]
 
 void setup()
 {
@@ -28,25 +36,34 @@ void setup()
 	
 	MotorBoard.modules.at(0).setCountDesired(countDesired);
 
-	digitalWriteFast(MotorBoard.pins.brakes[0], HIGH); // enable amp
+	MotorBoard.enableAllAmps(); // enable amp
 
 	startTime = millis();
+
+	PIDTimer.begin(PIDTimerISR, timeStepPID); // attach function and call every timeStepPID [us]
 }
 
 void loop()
 {
 	loopcount++;
-	delay(100);
 
-	MotorBoard.readButtons();
-	if (MotorBoard.isUpPressed()) {
-		countDesired += 100;
-		MotorBoard.modules.at(0).setCountDesired(countDesired);
-	}
-	else if (MotorBoard.isDownPressed()) {
-		countDesired -= 100;
-		MotorBoard.modules.at(0).setCountDesired(countDesired);
-	}
+	if ((millis() - lastTime) > buttonUpdateInterval) {
+		MotorBoard.readButtons();
+		if (MotorBoard.isUpPressed()) {
+			countDesired += buttonCountChange;
+			MotorBoard.modules.at(0).setCountDesired(countDesired);
+		}
+		else if (MotorBoard.isDownPressed()) {
+			countDesired -= buttonCountChange;
+			MotorBoard.modules.at(0).setCountDesired(countDesired);
+		}
 
+		lastTime = millis();
+	}
+	
+}
+
+void PIDTimerISR(void)
+{
 	MotorBoard.stepPID();
 }

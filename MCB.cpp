@@ -26,14 +26,10 @@ MCB::MCB(uint8_t numModules)
 	: DAC_(pins.csDAC)
 	, numModules_(numModules)	
 {	
-	// reserve memory for modules
+	// reserve memory for module components
 	modules.reserve(numModules_);
 	DACval_.reserve(numModules_);
-	
-	//// add modules
-	//for (uint8_t aa = 0; aa < numModules_; aa++) {
-	//	addModule(aa);
-	//}
+	LEDG_.reserve(numModules_);
 }
 
 void MCB::init(void)
@@ -80,31 +76,32 @@ void MCB::init(void)
 	}
 	DAC_.endTransfer();
 
-	// enable motor amp outputs
+	// enable motor amp outputs and turn on green LEDs
 	for (uint8_t aa = 0; aa < numModules_; aa++)
 	{
-		// software brakes (HIGH = amps disabled)
-		digitalWriteFast(pins.brakes[aa], LOW);
+		// software brakes (HIGH = amps enabled)
+		digitalWriteFast(pins.brakes[aa], HIGH);
+
+		setLEDG(aa, HIGH);
 	}
+
 }
 
 void MCB::addModule(uint8_t position)
 {
-
-	//MCBmodule moduleTemp(position); // create new module
-	//modules.at(position) = moduleTemp; // copy module to the modules vector
-	modules.push_back(MCBmodule(position));
+	modules.push_back(MCBmodule(position)); // create new MCBmodule and add to storage vector
 	modules.at(position).init(); // initialize module
 
-	DACval_.push_back(0); // initialize DAC output values to 0
+	DACval_.push_back(0);   // initialize DAC output values to 0
+	LEDG_.push_back(false); // begin with LEDs off
 }
 
 void MCB::disableAllAmps(void)
 {
 	for (uint8_t aa = 0; aa < pins.maxNumBoards; aa++)
 	{
-		// software brakes (HIGH = amps disabled)
-		digitalWriteFast(pins.brakes[aa], HIGH);
+		// software brakes (LOW = amps disabled)
+		digitalWriteFast(pins.brakes[aa], LOW);
 	}
 }
 
@@ -112,9 +109,15 @@ void MCB::enableAllAmps(void)
 {
 	for (uint8_t aa = 0; aa < numModules_; aa++)
 	{
-		// software brakes (HIGH = amps disabled)
-		digitalWriteFast(pins.brakes[aa], LOW);
+		// software brakes (HIGH = amps enabled)
+		digitalWriteFast(pins.brakes[aa], HIGH);
 	}
+}
+
+void MCB::setLEDG(uint8_t position, bool state)
+{
+	LEDG_.at(position) = state;
+	digitalWriteFast(pins.LEDG[position], LEDG_.at(position));
 }
 
 void MCB::setDACs(Int16Vec const &val)

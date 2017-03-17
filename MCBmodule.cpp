@@ -73,7 +73,6 @@ float MCBmodule::getEffort(void)
 
 void MCBmodule::restartPID(void)
 {
-	
 	PID_.reset();
 }
 

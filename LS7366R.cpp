@@ -18,16 +18,14 @@
 
 #include "LS7366R.h"
 #include "core_pins.h"
-//#include "WProgram.h"
 
 LS7366R::LS7366R(uint8_t csPin)
 	:	csPin_(csPin)
 	,	SPISettings_(3000000, MSBFIRST, SPI_MODE0)
 {	
 	// init chip-select pin (SYNC)
-	// NOTE: commented out as this is done during MCB construction 
-	// pinMode(m_pin_SS, OUTPUT);
-	// digitalWriteFast(m_pin_SS, HIGH);
+	 pinMode(csPin, OUTPUT);
+	 digitalWriteFast(csPin, HIGH);
 }
 
 void LS7366R::init(void)
