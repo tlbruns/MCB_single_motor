@@ -76,6 +76,11 @@ void MCBmodule::restartPID(void)
 	PID_.reset();
 }
 
+int32_t MCBmodule::getError(void)
+{
+	return countError_;
+}
+
 int16_t MCBmodule::convertEffortToDAC(float effort)
 {
 	float effortTemp = effort;

@@ -8,6 +8,7 @@
 #include "MCBmodule.h"
 #include "MCBpins.h"
 #include "PID_f32.h"
+#include <arm_math.h>
 #include <IntervalTimer.h>
 
 // GLOBAL VARIABLES
@@ -18,14 +19,21 @@ long int startTime;
 long int lastTime = 0;
 long int loopcount = 0;
 
+bool pidLedState = false;
+bool loopLedState = false;
+
 IntervalTimer PIDTimer;
 void PIDTimerISR(void);
-uint32_t timeStepPID = 2000;
-float kp = 0.0001, ki = 0.000, kd = 0.000;
+uint32_t timeStepPID = 1000;
+float kp = 0.0004, ki = 0.000002, kd = 0.01;
 int32_t countDesired = 0;
 
-uint32_t buttonUpdateInterval = 100; // [ms]
-uint32_t buttonCountChange = 500; // [counts]
+uint32_t buttonUpdateInterval = 5; // [ms]
+uint32_t buttonCountChange = 300; // [counts]
+
+float phase = 0.0;
+const int32_t sinAmplitude = 10000; // [counts]
+const float twopi = 2 * PI;
 
 void setup()
 {
@@ -47,23 +55,43 @@ void loop()
 {
 	loopcount++;
 
-	if ((millis() - lastTime) > buttonUpdateInterval) {
-		MotorBoard.readButtons();
-		if (MotorBoard.isUpPressed()) {
-			countDesired += buttonCountChange;
+	if ((millis() - lastTime) > buttonUpdateInterval) { // ~700us to run when button is pressed
+		loopLedState = !loopLedState;
+		digitalWriteFast(MotorBoard.pins.LEDG[1], loopLedState);
+
+		if (digitalReadFast(MotorBoard.pins.CTRL)) {
+			// generate sin wave trajectory
+			countDesired = (int32_t)(arm_sin_f32(phase) * sinAmplitude);
 			MotorBoard.modules.at(0).setCountDesired(countDesired);
+			phase = phase + 0.02;
+			if (phase >= twopi) phase = 0.0;
 		}
-		else if (MotorBoard.isDownPressed()) {
-			countDesired -= buttonCountChange;
-			MotorBoard.modules.at(0).setCountDesired(countDesired);
+		else {
+			MotorBoard.readButtons();
+			if (MotorBoard.isUpPressed()) {
+				countDesired += buttonCountChange;
+				MotorBoard.modules.at(0).setCountDesired(countDesired);
+			}
+			else if (MotorBoard.isDownPressed()) {
+				countDesired -= buttonCountChange;
+				MotorBoard.modules.at(0).setCountDesired(countDesired);
+			}
+			else if (MotorBoard.isMenuPressed()) {
+				MotorBoard.disableAllAmps();
+			}
 		}
+
+		loopLedState = !loopLedState;
+		digitalWriteFast(MotorBoard.pins.LEDG[1], loopLedState);
 
 		lastTime = millis();
 	}
-	
+		
 }
 
 void PIDTimerISR(void)
 {
 	MotorBoard.stepPID();
+	MotorBoard.setLEDG(0, pidLedState);
+	pidLedState = !pidLedState;
 }

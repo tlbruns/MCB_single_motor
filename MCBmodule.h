@@ -50,6 +50,7 @@ public:
 	// PID Controller
 	int16_t step(void);	// steps the PID controller, returns next DAC value
 	void restartPID(void); // call this after changing gains, resets state buffer to zeros
+	int32_t getError(void); // [counts] returns last computed error
 	float getEffort(void); // [Amps] returns last computed effort
 	void setGains(float kp, float ki, float kd);
 	void setKp(float kp);

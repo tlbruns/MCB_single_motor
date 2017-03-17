@@ -80,7 +80,7 @@ void MCB::init(void)
 	for (uint8_t aa = 0; aa < numModules_; aa++)
 	{
 		// software brakes (HIGH = amps enabled)
-		digitalWriteFast(pins.brakes[aa], HIGH);
+		digitalWriteFast(pins.ampEnable[aa], HIGH);
 
 		setLEDG(aa, HIGH);
 	}
@@ -101,7 +101,7 @@ void MCB::disableAllAmps(void)
 	for (uint8_t aa = 0; aa < pins.maxNumBoards; aa++)
 	{
 		// software brakes (LOW = amps disabled)
-		digitalWriteFast(pins.brakes[aa], LOW);
+		digitalWriteFast(pins.ampEnable[aa], LOW);
 	}
 }
 
@@ -110,7 +110,7 @@ void MCB::enableAllAmps(void)
 	for (uint8_t aa = 0; aa < numModules_; aa++)
 	{
 		// software brakes (HIGH = amps enabled)
-		digitalWriteFast(pins.brakes[aa], HIGH);
+		digitalWriteFast(pins.ampEnable[aa], HIGH);
 	}
 }
 
